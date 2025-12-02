@@ -1,25 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Site avec Tiles</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Remtests</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="top">
-    <h1>Mon site</h1>
-    <p class="subtitle">Navigation par tiles</p>
-  </div>
+  <header class="top">
+    <h1>Remtests</h1>
+    <p class="subtitle">Le site où je mets un peu tout ce qui me passe par le crâne :D</p>
+  </header>
 
-  <div class="container">
-    <!-- Conteneur des tiles -->
-    <div id="tiles" class="tiles-container"></div>
-  </div>
+  <main class="container">
+    <nav class="tiles-container">
+      <a class="tile" href="index.html">
+        <span class="icon">Jeux</span>
+      </a>
+      <a class="tile" href="apropos.html">
+        <span class="icon">Outils</span>
+        <span class="label">ca peut etre utile ...</span>
+      </a>
+      <a class="tile" href="contact.html">
+        <span class="icon">Contact</span>
+        <span class="label">Contact</span>
+      </a>
+      <a class="tile" href="galerie.html">
+        <span class="icon">🖼️</span>
+        <span class="label">Galerie</span>
+      </a>
+    </nav>
+  </main>
 
-  <div class="footer">
-    © 2025 - Mon site
-  </div>
-
-  <script src="script.js"></script>
+  <footer class="footer">
+    <small>© 2025 - Rémi REY</small>
+  </footer>
 </body>
 </html>
