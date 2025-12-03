@@ -8,6 +8,7 @@
 }
 
 * { box-sizing: border-box; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -21,8 +22,9 @@ html, body {
 
 .top {
   text-align: center;
-  padding: 2rem 1rem 1rem;
+  padding: 10px 5px 5px;
 }
+
 .subtitle {
   margin: 0.25rem 0 0;
   color: var(--muted);
@@ -48,15 +50,17 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 2px;
   text-decoration: none;
   color: var(--fg);
-  padding: 1.25rem;
+  padding: 10px;
   background: var(--card);
   border: 2px solid var(--border);
   border-radius: 12px;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
   width: 150px;
+  height: 50px;
+  cursor: pointer;
 }
 
 .tile:hover, .tile:focus {
@@ -80,4 +84,6 @@ html, body {
   padding: 1rem;
   color: var(--muted);
   border-top: 1px solid var(--border);
+}
+
 }
