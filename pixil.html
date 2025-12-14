@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Convertisseur PNG → .pixil (Pixilart)</title>
+  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <h1>Converter PNG → .pixil</h1>
+  <p>Import a PNG, check the size, then export the <code>.pixil</code> to pixilart.com.</p>
+  
+  <div class="row">
+    <div class="panel">
+      <label for="file">PNG to import</label><br />
+      <input id="file" type="file" accept="image/png" />
+      <div style="margin-top: 0.75rem;">
+        <label for="name">project name</label><br />
+        <input id="name" type="text" placeholder="Untitled" />
+      </div>
+      <div style="margin-top: 0.75rem;">
+        <label for="speed">speed (ms per frame)</label><br />
+        <input id="speed" type="number" min="1" value="100" />
+      </div>
+      <div style="margin-top: 0.75rem;">
+        <label for="scale">resize (px)</label><br />
+        <input id="scale" type="number" min="1" placeholder="Optionnel" />
+      </div>
+      <div style="margin-top: 0.75rem;">
+        <button id="export" disabled>Export to .pixil</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <label>insight</label><br />
+      <canvas id="canvas" width="0" height="0"></canvas>
+      <div style="margin-top: 0.5rem;">
+        <small id="info">no image.</small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Palette "default" extraite (raccourcie pour la démo) + "common/simple" utiles
+    // Pour un miroir 1:1 du fichier Pixilart, vous pouvez coller la liste complète fournie.
+    const PIXIL_PALETTES = {
+      default: [
+        "000000","ffffff","f44336","e91e63","9c27b0","673ab7","3f51b5","2196f3","03a9f4","00bcd4",
+        "009688","4caf50","8bc34a","cddc39","ffeb3b","ffc107","ff9800","ff5722","795548","9e9e9e","607d8b"
+      ],
+      simple: [
+        "ffffff","d4d4d4","a1a1a1","787878","545454","303030","000000","edc5c5","e68383","ff0000"
+      ],
+      common: [
+        "000000","ffffff","464646","b4b4b4","ed1c24","ff7e00","fff200","a8e61d","22b14c","00b7ef","4d6df3"
+      ]
+    };
+
+    const fileInput = document.getElementById('file');
+    const exportBtn = document.getElementById('export');
+    const canvas = document.getElementById('canvas');
+    const info = document.getElementById('info');
+    const nameInput = document.getElementById('name');
+    const speedInput = document.getElementById('speed');
+    const scaleInput = document.getElementById('scale');
+
+    let imageBitmap = null;
+    let dataURL = null;
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (file.type !== 'image/png') {
+        info.textContent = 'Veuillez sélectionner un fichier PNG.';
+        exportBtn.disabled = true;
+        return;
+      }
+
+      const blob = file;
+      const bmp = await createImageBitmap(blob);
+      imageBitmap = bmp;
+
+      // Optional scaling
+      const scaleTarget = parseInt(scaleInput.value, 10);
+      const w = Number.isFinite(scaleTarget) ? scaleTarget : bmp.width;
+      const h = Number.isFinite(scaleTarget) ? Math.round(bmp.height * (w / bmp.width)) : bmp.height;
+
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      ctx.imageSmoothingEnabled = false; // utile pour pixel art
+      ctx.drawImage(bmp, 0, 0, w, h);
+
+      dataURL = canvas.toDataURL('image/png'); // base64 PNG
+      info.textContent = `Image chargée: ${bmp.width}×${bmp.height} → ${w}×${h}`;
+      exportBtn.disabled = false;
+      if (!nameInput.value) nameInput.value = file.name.replace(/\.[^.]+$/, '') || 'Untitled';
+    });
+
+    exportBtn.addEventListener('click', () => {
+      if (!dataURL || !imageBitmap) return;
+
+      const now = Date.now();
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Structure .pixil conforme au schéma fourni
+      const pixil = {
+        application: "pixil",
+        type: ".pixil",
+        version: "2.7.0",
+        website: "pixilart.com",
+        author: "https://www.pixilart.com",
+        contact: "support@pixilart.com",
+        width,
+        height,
+        colors: {
+          default: PIXIL_PALETTES.default,
+          simple: PIXIL_PALETTES.simple,
+          common: PIXIL_PALETTES.common
+          // Vous pouvez ajouter toutes les autres palettes ici
+        },
+        colorSelected: "default",
+        frames: [
+          {
+            name: "",
+            speed: Number(speedInput.value) || 100,
+            layers: [
+              {
+                id: 0,
+                src: dataURL,           // data:image/png;base64,...
+                edit: false,
+                name: "Background",
+                opacity: 1,
+                active: true,
+                unqid: randomId(),
+                options: {
+                  blend: "source-over",
+                  alpha_lock: false,
+                  locked: false,
+                  filter: {
+                    brightness: "100%",
+                    contrast: "100%",
+                    grayscale: "0%",
+                    blur: 0,
+                    "hue-rotate": 0,
+                    "dropshadow_x": 0,
+                    "dropshadow_y": 0,
+                    "dropshadow_blur": 0,
+                    "dropshadow_alpha": 1,
+                    "dropshadow_color": "#000000"
+                  }
+                }
+              }
+            ],
+            active: true,
+            selectedLayer: 0,
+            unqid: randomId(),
+            preview: dataURL,
+            width,
+            height
+          }
+        ],
+        currentFrame: 0,
+        speed: Number(speedInput.value) || 100,
+        name: nameInput.value || "Untitled",
+        preview: dataURL,
+        previewApp: "",
+        art_edit_id: 0,
+        palette_id: false,
+        created_at: now,
+        updated_at: now,
+        id: now // ou un autre identifiant unique si nécessaire
+      };
+
+      const json = JSON.stringify(pixil);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = sanitizeFilename((nameInput.value || 'Untitled') + '.pixil');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    function randomId() {
+      // Générateur simple d'ID unique; Pixilart utilise des chaînes aléatoires similaires
+      return Math.random().toString(36).slice(2, 8);
+    }
+
+    function sanitizeFilename(name) {
+      return name.replace(/[\/\\?%*:|"<>]/g, '_');
+    }
+  </script>
+</body>
+</html>

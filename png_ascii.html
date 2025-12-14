@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="styles.css">
+  <title>png → ASCII</title>
+</head>
+<body>
+  <h1>Converter png → ASCII</h1>
+
+  <div class="controls">
+    <input type="file" id="fileInput" accept="image/*">
+    <label>width :
+      <input type="number" id="widthInput" value="100" min="20" max="400">
+    </label>
+    <label>height fix :
+      <input type="range" id="aspectInput" min="0.4" max="1.0" step="0.02" value="0.55">
+    </label>
+    <span id="aspectVal">0.55×</span>
+    <button id="copyBtn">Copy</button>
+  </div>
+
+  <div id="ascii"></div>
+
+  <script>
+    const asciiChars = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."];
+    const fileInput = document.getElementById("fileInput");
+    const widthInput = document.getElementById("widthInput");
+    const aspectInput = document.getElementById("aspectInput");
+    const aspectVal = document.getElementById("aspectVal");
+    const asciiDiv = document.getElementById("ascii");
+    const copyBtn = document.getElementById("copyBtn");
+
+    aspectInput.addEventListener("input", () => {
+      aspectVal.textContent = aspectInput.value + "×";
+      if (fileInput._img) renderAscii(fileInput._img);
+    });
+    widthInput.addEventListener("input", () => {
+      if (fileInput._img) renderAscii(fileInput._img);
+    });
+
+    function convertToAscii(image, newWidth, heightScale=0.55) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const ratio = image.height / image.width;
+      const newHeight = Math.floor(newWidth * ratio * heightScale);
+
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      ctx.drawImage(image, 0, 0, newWidth, newHeight);
+
+      const imgData = ctx.getImageData(0, 0, newWidth, newHeight);
+      let ascii = "";
+
+      for (let y = 0; y < newHeight; y++) {
+        for (let x = 0; x < newWidth; x++) {
+          const offset = (y * newWidth + x) * 4;
+          const r = imgData.data[offset];
+          const g = imgData.data[offset + 1];
+          const b = imgData.data[offset + 2];
+          const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+          const idx = Math.floor((lum / 255) * (asciiChars.length - 1));
+          ascii += asciiChars[idx];
+        }
+        ascii += "\n";
+      }
+      return ascii;
+    }
+
+    function renderAscii(img) {
+      const width = parseInt(widthInput.value, 10);
+      const heightScale = parseFloat(aspectInput.value);
+      const asciiArt = convertToAscii(img, width, heightScale);
+      asciiDiv.textContent = asciiArt;
+    }
+
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          fileInput._img = img;
+          renderAscii(img);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      const text = asciiDiv.textContent;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = "Copied !";
+      } catch (err) {
+        // Fallback si clipboard API échoue
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        copyBtn.textContent = "Copied !";
+      }
+      setTimeout(() => copyBtn.textContent = "Copy", 1500);
+    });
+  </script>
+</body>
+</html>

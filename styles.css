@@ -1,0 +1,157 @@
+/* Style global */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  background: #f5f5f5;
+  color: #222;
+}
+
+/* En-tête */
+header {
+  background: #4a90e2;
+  color: white;
+  padding: 2rem 1rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+header h2 {
+  margin: 0.5rem 0 0;
+  font-weight: 400;
+}
+
+/* Contenu principal */
+main {
+  margin-top: 2rem;
+}
+
+/* Zone des contrôles */
+.controls {
+  margin: 1.5rem auto;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.controls label {
+  margin: 0 0.5rem;
+  font-weight: 600;
+}
+
+.controls input[type="number"],
+.controls input[type="range"],
+.controls input[type="file"] {
+  margin-left: 0.3rem;
+}
+
+/* Boutons */
+.btn,
+#copyBtn,
+#export {
+  display: inline-block;
+  margin: 1rem;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  color: white;
+  background: #4a90e2;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+  text-decoration: none;
+}
+
+.btn:hover,
+#copyBtn:hover,
+#export:hover:enabled {
+  background: #357ab8;
+}
+
+#export:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Zone ASCII */
+#ascii {
+  margin-top: 2rem;
+  white-space: pre;      /* conserve les retours à la ligne */
+  font-family: monospace;
+  font-size: 10px;
+  line-height: 1;
+  background: #000;
+  color: #0f0;           /* vert style terminal */
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+/* Mise en page des panneaux pour le convertisseur .pixil */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  width: 280px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.panel label {
+  font-weight: 600;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.panel input[type="text"],
+.panel input[type="number"],
+.panel input[type="file"] {
+  margin-top: 0.25rem;
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+/* Canvas aperçu */
+#canvas {
+  display: block;
+  margin: 1rem auto;
+  background: #fafafa;
+  border: 1px dashed #ccc;
+  border-radius: 6px;
+  max-width: 100%;
+}
+
+#info {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .row {
+    flex-direction: column;
+    align-items: center;
+  }
+  .panel {
+    width: 90%;
+  }
+}
