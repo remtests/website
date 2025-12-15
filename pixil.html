@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Convertisseur PNG → .pixil (Pixilart)</title>
+  <title>Converter PNG → .pixil (Pixilart)</title>
   <link rel="stylesheet" href="styles.css">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
@@ -23,8 +23,9 @@
         <input id="speed" type="number" min="1" value="100" />
       </div>
       <div style="margin-top: 0.75rem;">
-        <label for="scale">resize (px)</label><br />
-        <input id="scale" type="number" min="1" placeholder="Optionnel" />
+        <label for="scaleFactor">scale factor (0.05 → 20)</label><br />
+        <input id="scaleFactor" type="range" min="0.05" max="20" step="0.05" value="1" />
+        <span id="scaleValue">1.00</span>
       </div>
       <div style="margin-top: 0.75rem;">
         <button id="export" disabled>Export to .pixil</button>
@@ -41,8 +42,6 @@
   </div>
 
   <script>
-    // Palette "default" extraite (raccourcie pour la démo) + "common/simple" utiles
-    // Pour un miroir 1:1 du fichier Pixilart, vous pouvez coller la liste complète fournie.
     const PIXIL_PALETTES = {
       default: [
         "000000","ffffff","f44336","e91e63","9c27b0","673ab7","3f51b5","2196f3","03a9f4","00bcd4",
@@ -62,10 +61,17 @@
     const info = document.getElementById('info');
     const nameInput = document.getElementById('name');
     const speedInput = document.getElementById('speed');
-    const scaleInput = document.getElementById('scale');
+    const scaleFactorInput = document.getElementById('scaleFactor');
+    const scaleValue = document.getElementById('scaleValue');
 
     let imageBitmap = null;
     let dataURL = null;
+
+    // Mise à jour du texte du curseur
+    scaleFactorInput.addEventListener('input', () => {
+      scaleValue.textContent = parseFloat(scaleFactorInput.value).toFixed(2);
+      if (imageBitmap) redraw();
+    });
 
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
@@ -77,27 +83,29 @@
         return;
       }
 
-      const blob = file;
-      const bmp = await createImageBitmap(blob);
-      imageBitmap = bmp;
+      imageBitmap = await createImageBitmap(file);
+      if (!nameInput.value) nameInput.value = file.name.replace(/\.[^.]+$/, '') || 'Untitled';
+      redraw();
+    });
 
-      // Optional scaling
-      const scaleTarget = parseInt(scaleInput.value, 10);
-      const w = Number.isFinite(scaleTarget) ? scaleTarget : bmp.width;
-      const h = Number.isFinite(scaleTarget) ? Math.round(bmp.height * (w / bmp.width)) : bmp.height;
+    function redraw() {
+      const bmp = imageBitmap;
+      const scaleFactor = parseFloat(scaleFactorInput.value);
+
+      const w = Math.max(1, Math.round(bmp.width * scaleFactor));
+      const h = Math.max(1, Math.round(bmp.height * scaleFactor));
 
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, w, h);
-      ctx.imageSmoothingEnabled = false; // utile pour pixel art
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(bmp, 0, 0, w, h);
 
-      dataURL = canvas.toDataURL('image/png'); // base64 PNG
+      dataURL = canvas.toDataURL('image/png');
       info.textContent = `Image chargée: ${bmp.width}×${bmp.height} → ${w}×${h}`;
       exportBtn.disabled = false;
-      if (!nameInput.value) nameInput.value = file.name.replace(/\.[^.]+$/, '') || 'Untitled';
-    });
+    }
 
     exportBtn.addEventListener('click', () => {
       if (!dataURL || !imageBitmap) return;
@@ -106,7 +114,6 @@
       const width = canvas.width;
       const height = canvas.height;
 
-      // Structure .pixil conforme au schéma fourni
       const pixil = {
         application: "pixil",
         type: ".pixil",
@@ -120,7 +127,6 @@
           default: PIXIL_PALETTES.default,
           simple: PIXIL_PALETTES.simple,
           common: PIXIL_PALETTES.common
-          // Vous pouvez ajouter toutes les autres palettes ici
         },
         colorSelected: "default",
         frames: [
@@ -130,7 +136,7 @@
             layers: [
               {
                 id: 0,
-                src: dataURL,           // data:image/png;base64,...
+                src: dataURL,
                 edit: false,
                 name: "Background",
                 opacity: 1,
@@ -172,7 +178,7 @@
         palette_id: false,
         created_at: now,
         updated_at: now,
-        id: now // ou un autre identifiant unique si nécessaire
+        id: now
       };
 
       const json = JSON.stringify(pixil);
@@ -189,7 +195,6 @@
     });
 
     function randomId() {
-      // Générateur simple d'ID unique; Pixilart utilise des chaînes aléatoires similaires
       return Math.random().toString(36).slice(2, 8);
     }
 
