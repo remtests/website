@@ -2,9 +2,37 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Converter PNG → .pixil (Pixilart)</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Convertisseur PNG → .pixil (Pixilart)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f5f5f5;
+      color: #222;
+    }
+    .row {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .panel {
+      flex: 1;
+      min-width: 280px;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #canvas {
+      width: 100%;         /* fit au container */
+      height: auto;        /* conserve le ratio */
+      image-rendering: pixelated; /* effet pixel art */
+      border: 1px solid #ccc;
+      background: #eee;
+    }
+  </style>
 </head>
 <body>
   <h1>Converter PNG → .pixil</h1>
@@ -204,3 +232,4 @@
   </script>
 </body>
 </html>
+``
