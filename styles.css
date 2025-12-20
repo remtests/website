@@ -96,7 +96,7 @@ main {
 /* Mise en page des panneaux */
 .row {
   display: flex;
-  gap: 2rem;
+  gap: 0rem;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -156,5 +156,6 @@ main {
     width: 90%;
   }
 }
+
 
 
