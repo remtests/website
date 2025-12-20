@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>PNG → STL (heightmap luminance)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #f5f5f5; color: #222; }
+    .row { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .panel { flex: 1; min-width: 320px; background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    #canvas { width: 100%; height: auto; image-rendering: pixelated; border: 1px solid #ccc; background: #eee; }
+    label { font-weight: 600; display: block; margin-top: 0.5rem; }
+    small { color: #555; }
+    input[type="number"] { width: 100%; box-sizing: border-box; padding: 0.25rem; margin-top: 0.25rem; }
+    button { margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 4px; border: none; background: #1976d2; color: #fff; cursor: pointer; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    a.download-link { display: inline-block; margin-top: 0.75rem; color: #1976d2; text-decoration: none; font-weight: 600; }
+    a.download-link:hover { text-decoration: underline; }
+    pre { max-height: 300px; overflow: auto; background: #f0f0f0; padding: 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>PNG → STL (heightmap luminance)</h1>
+  <div class="row">
+    <div class="panel">
+      <label for="fileInput">Image PNG</label>
+      <input type="file" id="fileInput" accept="image/png">
+      <small>Chaque pixel est converti en hauteur selon sa luminance.</small>
+
+      <label for="maxHeight">Hauteur max (en unités STL)</label>
+      <input type="number" id="maxHeight" value="10" step="0.1">
+
+      <label for="scaleXY">Échelle X/Y (taille d’un pixel en unités)</label>
+      <input type="number" id="scaleXY" value="1" step="0.1">
+
+      <label for="invertLuma">
+        <input type="checkbox" id="invertLuma">
+        Inverser la luminance (pixels clairs = creux)
+      </label>
+
+      <button id="generateBtn" disabled>Générer STL</button>
+      <a id="downloadLink" class="download-link" href="#" download="heightmap.stl" style="display:none;">Télécharger le STL</a>
+    </div>
+
+    <div class="panel">
+      <canvas id="canvas"></canvas>
+      <small>Prévisualisation de l’image utilisée (taille réelle pour le calcul).</small>
+      <h3>Aperçu STL (ASCII)</h3>
+      <pre id="stlPreview"></pre>
+    </div>
+  </div>
+
+  <script>
+    const fileInput   = document.getElementById('fileInput');
+    const canvas      = document.getElementById('canvas');
+    const ctx         = canvas.getContext('2d');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadLink= document.getElementById('downloadLink');
+    const stlPreview  = document.getElementById('stlPreview');
+    const maxHeightEl = document.getElementById('maxHeight');
+    const scaleXYEl   = document.getElementById('scaleXY');
+    const invertLumaEl= document.getElementById('invertLuma');
+
+    let imgWidth = 0;
+    let imgHeight = 0;
+    let imageData = null;
+
+    fileInput.addEventListener('change', handleFile);
+
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const img = new Image();
+      img.onload = () => {
+        imgWidth = img.width;
+        imgHeight = img.height;
+        canvas.width = imgWidth;
+        canvas.height = imgHeight;
+        ctx.clearRect(0, 0, imgWidth, imgHeight);
+        ctx.drawImage(img, 0, 0);
+        imageData = ctx.getImageData(0, 0, imgWidth, imgHeight);
+        generateBtn.disabled = false;
+        downloadLink.style.display = 'none';
+        stlPreview.textContent = '';
+      };
+      img.onerror = () => {
+        alert("Impossible de charger l'image.");
+      };
+      img.src = URL.createObjectURL(file);
+    }
+
+    generateBtn.addEventListener('click', () => {
+      if (!imageData) return;
+
+      const maxHeight = parseFloat(maxHeightEl.value) || 10;
+      const scaleXY   = parseFloat(scaleXYEl.value) || 1;
+      const invert    = invertLumaEl.checked;
+
+      const stl = generateStlFromImage(imageData, imgWidth, imgHeight, {
+        maxHeight,
+        scaleXY,
+        invert
+      });
+
+      // Créer un Blob et un lien de téléchargement
+      const blob = new Blob([stl], { type: 'model/stl' });
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      downloadLink.style.display = 'inline-block';
+
+      // Aperçu texte
+      stlPreview.textContent = stl.substring(0, 5000) + (stl.length > 5000 ? "\n...\n(tronqué)" : "");
+    });
+
+    function generateStlFromImage(imageData, width, height, options) {
+      const { maxHeight, scaleXY, invert } = options;
+      const data = imageData.data;
+
+      // Fonction luminance (sRGB approximatif)
+      function getLuma(x, y) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        let l = 0.2126 * r + 0.7152 * g + 0.0722 * b; // 0–255
+        l = l / 255; // 0–1
+        if (invert) l = 1 - l;
+        return l;
+      }
+
+      // Pré-calcul des hauteurs
+      const heights = new Array(width * height);
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          heights[y * width + x] = getLuma(x, y) * maxHeight;
+        }
+      }
+
+      // Génération STL ASCII
+      let stl = 'solid heightmap\n';
+
+      // Fonction pour écrire un triangle
+      function addTriangle(v1, v2, v3) {
+        // calcul normal approx
+        const ux = v2.x - v1.x;
+        const uy = v2.y - v1.y;
+        const uz = v2.z - v1.z;
+        const vx = v3.x - v1.x;
+        const vy = v3.y - v1.y;
+        const vz = v3.z - v1.z;
+        const nx = uy * vz - uz * vy;
+        const ny = uz * vx - ux * vz;
+        const nz = ux * vy - uy * vx;
+        const len = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
+        const nnx = nx / len;
+        const nny = ny / len;
+        const nnz = nz / len;
+
+        stl += `  facet normal ${nnx} ${nny} ${nnz}\n`;
+        stl += `    outer loop\n`;
+        stl += `      vertex ${v1.x} ${v1.y} ${v1.z}\n`;
+        stl += `      vertex ${v2.x} ${v2.y} ${v2.z}\n`;
+        stl += `      vertex ${v3.x} ${v3.y} ${v3.z}\n`;
+        stl += `    endloop\n`;
+        stl += `  endfacet\n`;
+      }
+
+      // Surface top (heightmap)
+      for (let y = 0; y < height - 1; y++) {
+        for (let x = 0; x < width - 1; x++) {
+          const h00 = heights[y * width + x];
+          const h10 = heights[y * width + (x + 1)];
+          const h01 = heights[(y + 1) * width + x];
+          const h11 = heights[(y + 1) * width + (x + 1)];
+
+          const x0 = x * scaleXY;
+          const x1 = (x + 1) * scaleXY;
+          const y0 = y * scaleXY;
+          const y1 = (y + 1) * scaleXY;
+
+          const v00 = { x: x0, y: y0, z: h00 };
+          const v10 = { x: x1, y: y0, z: h10 };
+          const v01 = { x: x0, y: y1, z: h01 };
+          const v11 = { x: x1, y: y1, z: h11 };
+
+          // 2 triangles pour le quad
+          addTriangle(v00, v10, v11);
+          addTriangle(v00, v11, v01);
+        }
+      }
+
+      // Option simple: fermer le bas par un plan à z = 0 et les côtés
+      // Bas (z=0)
+      const z0 = 0;
+      for (let y = 0; y < height - 1; y++) {
+        for (let x = 0; x < width - 1; x++) {
+          const x0 = x * scaleXY;
+          const x1 = (x + 1) * scaleXY;
+          const y0 = y * scaleXY;
+          const y1 = (y + 1) * scaleXY;
+
+          const v00 = { x: x0, y: y0, z: z0 };
+          const v10 = { x: x1, y: y0, z: z0 };
+          const v01 = { x: x0, y: y1, z: z0 };
+          const v11 = { x: x1, y: y1, z: z0 };
+
+          // Face tournée vers le bas (normal approximative en -Z)
+          addTriangle(v00, v11, v10);
+          addTriangle(v00, v01, v11);
+        }
+      }
+
+      // Bords (4 côtés)
+      function addWall(xA, yA, xB, yB) {
+        const steps = Math.max(
+          Math.abs(xB - xA),
+          Math.abs(yB - yA)
+        );
+        if (steps === 0) return;
+
+        for (let i = 0; i < steps; i++) {
+          const t0 = i / steps;
+          const t1 = (i + 1) / steps;
+
+          const x0 = Math.round(xA + (xB - xA) * t0);
+          const y0 = Math.round(yA + (yB - yA) * t0);
+          const x1 = Math.round(xA + (xB - xA) * t1);
+          const y1 = Math.round(yA + (yB - yA) * t1);
+
+          const h0 = heights[y0 * width + x0];
+          const h1 = heights[y1 * width + x1];
+
+          const vx0 = x0 * scaleXY;
+          const vy0 = y0 * scaleXY;
+          const vx1 = x1 * scaleXY;
+          const vy1 = y1 * scaleXY;
+
+          const top0 = { x: vx0, y: vy0, z: h0 };
+          const top1 = { x: vx1, y: vy1, z: h1 };
+          const bot0 = { x: vx0, y: vy0, z: z0 };
+          const bot1 = { x: vx1, y: vy1, z: z0 };
+
+          addTriangle(top0, top1, bot1);
+          addTriangle(top0, bot1, bot0);
+        }
+      }
+
+      // haut (y=0), bas (y=height-1), gauche (x=0), droite (x=width-1)
+      addWall(0, 0, width - 1, 0);           // bord haut
+      addWall(0, height - 1, width - 1, height - 1); // bord bas
+      addWall(0, 0, 0, height - 1);          // bord gauche
+      addWall(width - 1, 0, width - 1, height - 1);  // bord droit
+
+      stl += 'endsolid heightmap\n';
+      return stl;
+    }
+  </script>
+</body>
+</html>
