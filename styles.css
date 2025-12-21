@@ -11,18 +11,23 @@ body {
 header {
   background: #4a90e2;
   color: white;
-  padding: 0rem 0rem;
-  text-align: left; /* ✅ ancré à gauche */
+  padding: 3rem 1rem; /* ✅ plus d’espace vertical */
+  text-align: center; /* ✅ centré pour un effet plus léger */
 }
 
+/* Titre principal */
 header h1 {
   margin: 0;
-  font-size: 2.5rem;
+  font-size: 3rem;     /* ✅ plus grand */
+  font-weight: 600;
 }
 
+/* Sous-titre */
 header h2 {
-  margin: 0.5rem 0 0;
+  margin: 1rem 0 0;
+  font-size: 1.5rem;    /* ✅ plus lisible */
   font-weight: 400;
+  opacity: 0.9;         /* ✅ effet plus doux */
 }
 
 /* Contenu principal */
@@ -158,6 +163,7 @@ main {
     width: 90%;
   }
 }
+
 
 
 
