@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Calculateur de Filament 3D</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #f5f5f5;
+        border-radius: 10px;
+    }
+
+    h1 { text-align: left; }
+
+    label { font-weight: bold; }
+
+    .block { margin-bottom: 20px; }
+
+    input, select {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+
+#result {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.button { 
+    margin-top: 0.75rem; 
+    padding: 0.5rem 0.75rem; 
+    border-radius: 4px; 
+    border: none; 
+    background: #1976d2; 
+    color: #fff; 
+    cursor: pointer;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Calculateur de Filament 3D</h1>
+
+<div class="block">
+    <label for="plastic">Type de plastique :</label>
+    <select id="plastic">
+        <option value="1.24">PLA (1.24 g/cm³)</option>
+        <option value="1.04">ABS (1.04 g/cm³)</option>
+        <option value="1.27">PETG (1.27 g/cm³)</option>
+        <option value="1.20">TPU (1.20 g/cm³)</option>
+    </select>
+</div>
+
+<div class="block">
+    <label for="length">Longueur consommée (en mètres) :</label>
+    <input type="number" id="length" step="0.01" placeholder="ex : 12.5">
+</div>
+
+<div class="block">
+    <label for="diameter">Diamètre du filament (en mm) :</label>
+    <input type="number" id="diameter" step="0.01" value="1.75">
+</div>
+
+<button onclick="calculate()" class="button">Calculer</button>
+
+<h2>Résultats</h2>
+<div id="result">Aucun calcul effectué.</div>
+
+<script>
+function calculate() {
+    const density = parseFloat(document.getElementById("plastic").value); // g/cm³
+    const length_m = parseFloat(document.getElementById("length").value);
+    const diameter_mm = parseFloat(document.getElementById("diameter").value);
+
+    if (isNaN(length_m) || isNaN(diameter_mm)) {
+        document.getElementById("result").innerHTML = "Veuillez remplir tous les champs.";
+        return;
+    }
+
+    // Convertir unités
+    const length_cm = length_m * 100; // m → cm
+    const radius_cm = (diameter_mm / 10) / 2; // mm → cm
+
+    // Volume du filament (cylindre)
+    const volume_cm3 = Math.PI * radius_cm * radius_cm * length_cm;
+
+    // Masse
+    const mass_g = volume_cm3 * density;
+
+    document.getElementById("result").innerHTML = `
+        <b>Densité utilisée :</b> ${density} g/cm³<br>
+        <b>Volume du filament :</b> ${volume_cm3.toFixed(2)} cm³<br>
+        <b>Masse estimée :</b> ${mass_g.toFixed(2)} g<br>
+        <b>Longueur :</b> ${length_m} m<br>
+        <b>Diamètre :</b> ${diameter_mm} mm
+    `;
+}
+</script>
+
+</body>
+</html>
